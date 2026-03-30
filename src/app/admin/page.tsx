@@ -52,22 +52,33 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddProduct = () => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleAddProduct = async () => {
     if (!newProduct.title || !newProduct.price || newProduct.images[0] === '') {
       alert('Preencha os campos obrigatórios!');
       return;
     }
     
-    if (isEditing) {
-      updateProduct(newProduct);
-      setIsEditing(false);
-    } else {
-      const productToAdd = { ...newProduct, id: Math.random().toString(36).substr(2, 9) };
-      addProduct(productToAdd);
-    }
+    setIsSaving(true);
+    try {
+      if (isEditing) {
+        await updateProduct(newProduct);
+        setIsEditing(false);
+      } else {
+        const productToAdd = { ...newProduct, id: Math.random().toString(36).substr(2, 9) };
+        await addProduct(productToAdd);
+      }
 
-    setShowAddForm(false);
-    setNewProduct({ id: '', title: '', description: '', price: 0, category: 'CAMISAS', images: [''], sizes: [], colors: [] });
+      setShowAddForm(false);
+      setNewProduct({ id: '', title: '', description: '', price: 0, category: 'CAMISAS', images: [''], sizes: [], colors: [] });
+      alert('Produto salvo com sucesso!');
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao salvar produto. Verifique sua conexão com o banco de dados.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const startEdit = (p: Product) => {

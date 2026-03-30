@@ -1,6 +1,11 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getProductsAction, addProductAction, updateProductAction, deleteProductAction, getConfigAction, updateConfigAction } from '@/app/actions';
+import { 
+  getProductsAction, addProductAction, updateProductAction, deleteProductAction, 
+  getConfigAction, updateConfigAction,
+  registerUserAction, loginUserAction, getUsersAction,
+  createOrderAction, getOrdersAction, updateOrderStatusAction, confirmPaymentAction
+} from '@/app/actions';
 
 export type Category = 'CAMISAS' | 'RELOGIOS' | 'TENIS' | 'CALCAS' | 'BERMUDAS';
 
@@ -11,23 +16,23 @@ export interface Order { id: string; userId: string; items: any[]; subtotal: num
 
 export interface Coupon {
   code: string;
-  discount: number; // Porcentagem (ex: 10 para 10%)
+  discount: number;
 }
 
 interface StoreConfig { whatsapp: string; instagram: string; pixKey: string; pixReceiverName: string; pixCity: string; shippingFee: number; logo?: string; }
 
 interface StoreContextType {
   products: Product[]; cart: CartItem[]; config: StoreConfig; users: User[]; currentUser: User | null; orders: Order[]; coupons: Coupon[];
-  updateConfig: (newConfig: StoreConfig) => void;
-  addProduct: (product: Product) => void;
-  updateProduct: (product: Product) => void;
-  deleteProduct: (productId: string) => void;
-  registerUser: (user: User) => void;
-  loginUser: (email: string, pass: string) => boolean;
+  updateConfig: (newConfig: StoreConfig) => Promise<void>;
+  addProduct: (product: Product) => Promise<void>;
+  updateProduct: (product: Product) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<void>;
+  registerUser: (user: User) => Promise<void>;
+  loginUser: (email: string, pass: string) => Promise<boolean>;
   logoutUser: () => void;
-  createOrder: (pickup: boolean, coupon?: Coupon) => string;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  confirmPayment: (orderId: string) => void;
+  createOrder: (pickup: boolean, coupon?: Coupon) => Promise<string>;
+  updateOrderStatus: (orderId: string, status: Order['status']) => Promise<void>;
+  confirmPayment: (orderId: string) => Promise<void>;
   addToCart: (item: CartItem) => void;
   removeFromCart: (cartId: string) => void;
   clearCart: () => void;
@@ -37,12 +42,11 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-// Helper para WhatsApp: Garante o 55
 export const formatWhatsApp = (num: string) => {
   const clean = num.replace(/\D/g, '');
-  if (clean.length === 11) return `55${clean}`; // Celular comum sem 55
-  if (clean.length === 10) return `55${clean}`; // Fixo ou sem o 9
-  return clean; // Já tem 55 ou é outro formato
+  if (clean.length === 11) return `55${clean}`;
+  if (clean.length === 10) return `55${clean}`;
+  return clean;
 };
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -58,25 +62,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function loadData() {
       try {
-        const [dbProducts, dbConfig] = await Promise.all([
+        const [dbProducts, dbConfig, dbUsers, dbOrders] = await Promise.all([
           getProductsAction(),
-          getConfigAction()
+          getConfigAction(),
+          getUsersAction(),
+          getOrdersAction()
         ]);
         
-        // Converte os dados do Prisma para o formato do Context se necessário
         setProducts(dbProducts as any);
-        setConfig(dbConfig as any);
+        if (dbConfig) setConfig(dbConfig as any);
+        setUsers(dbUsers as any);
+        setOrders(dbOrders as any);
 
         const saved = {
           cart: localStorage.getItem('bg-cart'),
-          users: localStorage.getItem('bg-users'),
-          orders: localStorage.getItem('bg-orders'),
           user: localStorage.getItem('bg-current-user'),
           coupons: localStorage.getItem('bg-coupons')
         };
         if (saved.cart) setCart(JSON.parse(saved.cart));
-        if (saved.users) setUsers(JSON.parse(saved.users));
-        if (saved.orders) setOrders(JSON.parse(saved.orders));
         if (saved.user) setCurrentUser(JSON.parse(saved.user));
         if (saved.coupons) setCoupons(JSON.parse(saved.coupons));
       } catch (e) { console.error(e); }
@@ -88,12 +91,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem('bg-cart', JSON.stringify(cart));
-      localStorage.setItem('bg-users', JSON.stringify(users));
-      localStorage.setItem('bg-orders', JSON.stringify(orders));
       localStorage.setItem('bg-current-user', JSON.stringify(currentUser));
       localStorage.setItem('bg-coupons', JSON.stringify(coupons));
     }
-  }, [cart, users, orders, currentUser, coupons, isHydrated]);
+  }, [cart, currentUser, coupons, isHydrated]);
 
   const updateConfig = async (newConfig: StoreConfig) => {
     setConfig(newConfig);
@@ -115,15 +116,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await deleteProductAction(id);
   };
 
-  const registerUser = (user: User) => setUsers(prev => [...prev, user]);
+  const registerUser = async (user: User) => {
+    const saved = await registerUserAction(user);
+    setUsers(prev => [...prev, saved as any]);
+  };
+
   const logoutUser = () => setCurrentUser(null);
-  const loginUser = (email: string, pass: string) => {
-    const user = users.find(u => u.email === email && u.password === pass);
-    if (user) { setCurrentUser(user); return true; }
+  
+  const loginUser = async (email: string, pass: string) => {
+    const user = await loginUserAction(email, pass);
+    if (user) { setCurrentUser(user as any); return true; }
     return false;
   };
 
-  const createOrder = (pickup: boolean, coupon?: Coupon) => {
+  const createOrder = async (pickup: boolean, coupon?: Coupon) => {
     if (!currentUser) return '';
     const orderItems = cart.map(item => {
       const p = products.find(prod => prod.id === item.id);
@@ -133,23 +139,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (coupon) subtotal = subtotal * (1 - coupon.discount / 100);
     
     const shipping = pickup ? 0 : config.shippingFee;
-    const newOrder: Order = {
-      id: Math.random().toString(36).substr(2, 6).toUpperCase(),
+    
+    const orderData = {
       userId: currentUser.id,
       items: orderItems,
       subtotal, shipping, total: subtotal + shipping,
-      date: new Date().toISOString(),
       status: 'Pendente',
       pickup,
       couponApplied: coupon?.code
     };
-    setOrders(prev => [newOrder, ...prev]);
+
+    const newOrder = await createOrderAction(orderData);
+    setOrders(prev => [newOrder as any, ...prev]);
     setCart([]);
     return newOrder.id;
   };
 
-  const updateOrderStatus = (id: string, status: Order['status']) => setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
-  const confirmPayment = (id: string) => setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'Pago', paymentDetails: { time: new Date().toLocaleTimeString(), amount: o.total, method: 'PIX' } } : o));
+  const updateOrderStatus = async (id: string, status: Order['status']) => {
+    await updateOrderStatusAction(id, status);
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+  };
+
+  const confirmPayment = async (id: string) => {
+    const paymentDetails = { time: new Date().toLocaleTimeString(), amount: 0, method: 'PIX' };
+    await confirmPaymentAction(id, paymentDetails);
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'Pago', paymentDetails } : o));
+  };
 
   const addToCart = (newItem: CartItem) => {
     setCart(prev => {

@@ -16,15 +16,15 @@ export default function LoginPage() {
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isRegister) {
       const newUser: User = { ...formData, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() };
-      registerUser(newUser);
+      await registerUser(newUser);
       alert('Cadastro realizado! Faça login agora.');
       setIsRegister(false);
     } else {
-      const success = loginUser(formData.email, formData.password);
+      const success = await loginUser(formData.email, formData.password);
       if (success) router.push('/perfil');
       else alert('E-mail ou senha incorretos.');
     }

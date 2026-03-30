@@ -9,11 +9,14 @@ generator client {
 
 model Product {
   id          String   @id @default(cuid())
-  name        String
+  title       String
   description String
   price       Float
-  imageUrl    String
   category    String
+  images      String[]
+  sizes       String[]
+  colors      String[]
+  badge       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -21,6 +24,32 @@ model Product {
 model Category {
   id   String @id @default(cuid())
   name String
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  phone     String
+  address   String
+  password  String
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  items          Json
+  subtotal       Float
+  shipping       Float
+  total          Float
+  status         String   @default("Pendente")
+  pickup         Boolean  @default(false)
+  paymentDetails Json?
+  couponApplied  String?
+  createdAt      DateTime @default(now())
 }
 
 model Config {
