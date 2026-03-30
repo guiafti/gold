@@ -1,4 +1,8 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_https://vdahbmqcowrinmvguurh.supabase.co")
- }
+"dependencies": {
+  "@prisma/client": "^6.4.1",
+  ...
+},
+"devDependencies": {
+  "prisma": "^6.4.1",
+  ...
+}
