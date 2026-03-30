@@ -23,10 +23,9 @@ model Category {
   name String
 }
 
-// ADICIONE ESSE MODELO AQUI EMBAIXO:
 model Config {
-  id           String @id @default("main")
-  storeName    String @default("Black Gold")
-  primaryColor String @default("#000000")
+  id           String  @id @default("main")
+  storeName    String  @default("Black Gold")
+  primaryColor String  @default("#000000")
   logoUrl      String?
 }
