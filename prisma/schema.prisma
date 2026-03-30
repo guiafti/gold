@@ -1,8 +1,26 @@
-"dependencies": {
-  "@prisma/client": "^6.4.1",
-  ...
-},
-"devDependencies": {
-  "prisma": "^6.4.1",
-  ...
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// --- COLA DAQUI PARA BAIXO ---
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  imageUrl    String
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id   String @id @default(cuid())
+  name String
 }
