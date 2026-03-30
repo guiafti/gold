@@ -407,9 +407,17 @@ export default function AdminPage() {
 
                 <button 
                   onClick={handleAddProduct}
-                  className="w-full bg-brand-gold text-black font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.02] transition-transform shadow-xl shadow-brand-gold/10"
+                  disabled={isSaving}
+                  className={`w-full font-black py-5 rounded-2xl uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${isSaving ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-brand-gold text-black hover:scale-[1.02] shadow-brand-gold/10'}`}
                 >
-                  {isEditing ? 'Salvar Alterações' : 'Salvar Produto na Loja'}
+                  {isSaving ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-circle-notch animate-spin"></i>
+                      Processando...
+                    </span>
+                  ) : (
+                    isEditing ? 'Salvar Alterações' : 'Salvar Produto na Loja'
+                  )}
                 </button>
               </div>
             )}
