@@ -11,6 +11,7 @@ export async function uploadImageAction(formData: FormData) {
 
     const blob = await put(file.name, file, {
       access: 'public', 
+      addRandomSuffix: true, // Adiciona um código aleatório no nome da foto para evitar erro de duplicidade
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
