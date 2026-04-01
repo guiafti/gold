@@ -5,7 +5,7 @@ import {
   getConfigAction, updateConfigAction,
   registerUserAction, loginUserAction, getUsersAction,
   createOrderAction, getOrdersAction, updateOrderStatusAction, confirmPaymentAction
-} from '@/app/actions';
+} from '@/app/server-actions';
 
 export type Category = 'CAMISAS' | 'RELOGIOS' | 'TENIS' | 'CALCAS' | 'BERMUDAS';
 

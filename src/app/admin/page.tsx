@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useStore, Product, Category, User, Order, Coupon, formatWhatsApp } from '@/context/StoreContext';
-import { uploadImageActionV3 } from '@/app/actions';
+import { uploadImageActionV3 } from '@/app/server-actions';
 
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
