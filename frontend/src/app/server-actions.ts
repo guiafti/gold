@@ -1,7 +1,9 @@
 'use server';
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { put } from "@vercel/blob";
+import { mkdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+import { randomUUID } from "crypto";
 
 // UPLOAD DE IMAGENS
 export async function uploadImageActionV3(formData: FormData) {
@@ -10,13 +12,41 @@ export async function uploadImageActionV3(formData: FormData) {
     const file = formData.get('file') as File;
     if (!file) throw new Error("Arquivo não encontrado");
 
-    const blob = await put(file.name, file, {
-      access: 'public', 
-      addRandomSuffix: true, 
-      token: process.env.BLOB_READ_WRITE_TOKEN
-    });
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const storedName = `${Date.now()}-${randomUUID()}-${safeName}`;
+    const uploadsDir = path.resolve(process.cwd(), "..", "backend", "storage", "uploads");
+    const manifestDir = path.resolve(process.cwd(), "..", "backend", "storage");
+    const manifestPath = path.join(manifestDir, "uploaded-files.json");
+    const filePath = path.join(uploadsDir, storedName);
 
-    return blob.url;
+    await mkdir(uploadsDir, { recursive: true });
+    await mkdir(manifestDir, { recursive: true });
+    await writeFile(filePath, Buffer.from(await file.arrayBuffer()));
+
+    const fileUrl = `/uploads/${storedName}`;
+    const newEntry = {
+      id: randomUUID(),
+      originalName: file.name,
+      storedName,
+      mimeType: file.type || "application/octet-stream",
+      size: file.size,
+      url: fileUrl,
+      createdAt: new Date().toISOString()
+    };
+
+    let uploadedFiles: any[] = [];
+    try {
+      const currentManifest = await readFile(manifestPath, "utf-8");
+      uploadedFiles = JSON.parse(currentManifest);
+      if (!Array.isArray(uploadedFiles)) uploadedFiles = [];
+    } catch {
+      uploadedFiles = [];
+    }
+
+    uploadedFiles.push(newEntry);
+    await writeFile(manifestPath, JSON.stringify(uploadedFiles, null, 2), "utf-8");
+
+    return fileUrl;
   } catch (error) {
     console.error("Erro no upload:", error);
     throw error;
@@ -74,7 +104,98 @@ export async function deleteProductAction(id: string) {
   }
 }
 
-// CONFIGURAÇÕES
+
+// CATEGORIAS
+export async function getCategoriesAction() {
+  try {
+    return await prisma.category.findMany({
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error("Erro ao buscar categorias:", error);
+    return [];
+  }
+}
+
+export async function addCategoryAction(name: string) {
+  try {
+    const normalizedName = name.trim();
+    if (!normalizedName) throw new Error("Nome da categoria é obrigatório");
+
+    const existing = await prisma.category.findFirst({
+      where: { name: { equals: normalizedName, mode: 'insensitive' } }
+    });
+    if (existing) return existing;
+
+    const category = await prisma.category.create({
+      data: { name: normalizedName }
+    });
+
+    revalidatePath('/admin');
+    return category;
+  } catch (error) {
+    console.error("Erro ao adicionar categoria:", error);
+    throw error;
+  }
+}
+
+export async function updateCategoryAction(id: string, name: string) {
+  try {
+    const normalizedName = name.trim();
+    if (!normalizedName) throw new Error("Nome da categoria é obrigatório");
+
+    const current = await prisma.category.findUnique({ where: { id } });
+    if (!current) throw new Error("Categoria não encontrada");
+
+    const duplicate = await prisma.category.findFirst({
+      where: {
+        id: { not: id },
+        name: { equals: normalizedName, mode: 'insensitive' }
+      }
+    });
+    if (duplicate) throw new Error("Já existe uma categoria com esse nome");
+
+    const [category] = await prisma.$transaction([
+      prisma.category.update({
+        where: { id },
+        data: { name: normalizedName }
+      }),
+      prisma.product.updateMany({
+        where: { category: current.name },
+        data: { category: normalizedName }
+      })
+    ]);
+
+    revalidatePath('/admin');
+    revalidatePath('/');
+    return category;
+  } catch (error) {
+    console.error("Erro ao atualizar categoria:", error);
+    throw error;
+  }
+}
+
+export async function deleteCategoryAction(id: string) {
+  try {
+    const category = await prisma.category.findUnique({ where: { id } });
+    if (!category) return;
+
+    const productsUsingCategory = await prisma.product.count({
+      where: { category: category.name }
+    });
+
+    if (productsUsingCategory > 0) {
+      throw new Error("Não é possível excluir uma categoria já utilizada em produtos");
+    }
+
+    await prisma.category.delete({ where: { id } });
+    revalidatePath('/admin');
+  } catch (error) {
+    console.error("Erro ao excluir categoria:", error);
+    throw error;
+  }
+}
+// CONFIGURAÃ‡Ã•ES
 export async function getConfigAction() {
   try {
     let config = await prisma.config.findUnique({ where: { id: 'main' } });
@@ -83,9 +204,9 @@ export async function getConfigAction() {
         data: {
           id: 'main',
           whatsapp: '5533999999999',
-          instagram: 'blackgold_almenara',
+          instagram: 'ecommerce_almenara',
           pixKey: '',
-          pixReceiverName: 'BLACK GOLD',
+          pixReceiverName: 'ECOMMERCE',
           pixCity: 'ALMENARA',
           shippingFee: 15.00,
           logo: ''
@@ -114,13 +235,13 @@ export async function updateConfigAction(data: any) {
   }
 }
 
-// USUÁRIOS
+// USUÃRIOS
 export async function registerUserAction(data: any) {
   try {
     const { id, ...rest } = data;
     return await prisma.user.create({ data: { ...rest } });
   } catch (error) {
-    console.error("Erro ao registrar usuário:", error);
+    console.error("Erro ao registrar usuÃ¡rio:", error);
     throw error;
   }
 }
@@ -142,7 +263,7 @@ export async function getUsersAction() {
       orderBy: { createdAt: 'desc' }
     });
   } catch (error) {
-    console.error("Erro ao buscar usuários:", error);
+    console.error("Erro ao buscar usuÃ¡rios:", error);
     return [];
   }
 }
@@ -196,3 +317,6 @@ export async function confirmPaymentAction(id: string, paymentDetails: any) {
     throw error;
   }
 }
+
+
+

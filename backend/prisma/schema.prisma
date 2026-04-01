@@ -54,7 +54,7 @@ model Order {
 
 model Config {
   id              String  @id @default("main")
-  storeName       String  @default("Black Gold")
+  storeName       String  @default("Ecommerce")
   primaryColor    String  @default("#000000")
   logo            String  @default("")
   whatsapp        String  @default("")

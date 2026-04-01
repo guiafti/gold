@@ -93,7 +93,7 @@ export default function ProductGrid() {
         <div className="text-center mb-16">
           <h2 className="font-heading font-black text-3xl md:text-5xl uppercase mb-4 text-white">Nossos <span className="text-brand-gold">Modelos</span></h2>
           <div className="w-24 h-1 bg-brand-gold mx-auto mb-6"></div>
-          <p className="text-gray-400 uppercase tracking-[0.2em] text-[10px] md:text-xs">Estilo Grife • Black Gold</p>
+          <p className="text-gray-400 uppercase tracking-[0.2em] text-[10px] md:text-xs">Estilo Grife • Ecommerce</p>
         </div>
         
         {products.length === 0 ? (
@@ -111,3 +111,4 @@ export default function ProductGrid() {
     </section>
   );
 }
+

@@ -37,7 +37,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md bg-brand-dark p-8 rounded-3xl border border-white/5 shadow-2xl">
           <div className="text-center mb-10">
             <h1 className="font-heading font-black text-3xl uppercase">{isRegister ? 'Criar Conta' : 'Entrar'}</h1>
-            <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-2">Área do Cliente Black Gold</p>
+            <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-2">Área do Cliente Ecommerce</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,3 +67,6 @@ export default function LoginPage() {
     </main>
   );
 }
+
+
+

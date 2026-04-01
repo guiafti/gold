@@ -10,7 +10,7 @@ export default function About() {
           <div className="flex items-center gap-4 mb-6">
             <div className="w-16 h-16 rounded-full border-2 border-brand-gold flex items-center justify-center bg-brand-dark text-brand-gold font-bold text-2xl">BG</div>
             <div>
-              <h2 className="font-heading font-extrabold text-xl md:text-3xl uppercase tracking-tighter text-white">@blackgold_almenara</h2>
+              <h2 className="font-heading font-extrabold text-xl md:text-3xl uppercase tracking-tighter text-white">@ecommerce_almenara</h2>
               <p className="text-brand-gold text-xs md:text-sm tracking-widest mt-1 font-bold uppercase">A LOJA 01 DE ALMENARA 🚀</p>
             </div>
           </div>
@@ -27,7 +27,7 @@ export default function About() {
               <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">Original</p>
             </div>
           </div>
-          <a href="https://www.instagram.com/blackgold_almenara/" target="_blank" className="bg-gradient-gold text-black font-bold py-3.5 px-8 rounded-full hover:opacity-90 transition-opacity w-full sm:w-auto inline-flex items-center justify-center text-sm md:text-base shadow-xl uppercase">
+          <a href="https://www.instagram.com/ecommerce_almenara/" target="_blank" className="bg-gradient-gold text-black font-bold py-3.5 px-8 rounded-full hover:opacity-90 transition-opacity w-full sm:w-auto inline-flex items-center justify-center text-sm md:text-base shadow-xl uppercase">
             <i className="fa-brands fa-instagram text-xl mr-2"></i> Seguir no Insta
           </a>
         </div>
@@ -35,5 +35,6 @@ export default function About() {
     </section>
   );
 }
+
 
 

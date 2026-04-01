@@ -16,7 +16,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Black Gold | Referência em Grife e Tendências",
+  title: "Ecommerce | Referência em Grife e Tendências",
   description: "A Loja 01 de Almenara. Seu estilo no topo.",
 };
 
@@ -38,5 +38,8 @@ export default function RootLayout({
     </html>
   );
 }
+
+
+
 
 

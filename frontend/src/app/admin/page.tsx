@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore, Product, Category, User, Order, Coupon, formatWhatsApp } from '@/context/StoreContext';
 import { uploadImageActionV3 } from '@/app/server-actions';
 
@@ -7,9 +7,9 @@ export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState('');
   const [pass, setPass] = useState('');
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'clients' | 'config' | 'coupons'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'clients' | 'config' | 'coupons' | 'categories'>('orders');
   
-  const { config, updateConfig, products, addProduct, updateProduct, deleteProduct, users, orders, updateOrderStatus, coupons, addCoupon, removeCoupon } = useStore();
+  const { config, updateConfig, products, categories, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, users, orders, updateOrderStatus, coupons, addCoupon, removeCoupon } = useStore();
 
   const [clientSearch, setClientSearch] = useState('');
   const [clientDateFilter, setClientDateFilter] = useState<'todos' | '3meses' | 'sumidos'>('todos');
@@ -25,7 +25,7 @@ export default function AdminPage() {
     title: '',
     description: '',
     price: 0,
-    category: 'CAMISAS',
+    category: '',
     images: [''],
     sizes: [],
     colors: []
@@ -33,7 +33,8 @@ export default function AdminPage() {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  const categories: Category[] = ['CAMISAS', 'RELOGIOS', 'TENIS', 'CALCAS', 'BERMUDAS'];
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
   const [isUploading, setIsUploading] = useState(false);
 
@@ -64,8 +65,14 @@ export default function AdminPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (!newProduct.category && categories.length > 0) {
+      setNewProduct(prev => ({ ...prev, category: categories[0].name }));
+    }
+  }, [categories, newProduct.category]);
+
   const handleAddProduct = async () => {
-    if (!newProduct.title || !newProduct.price || newProduct.images[0] === '') {
+    if (!newProduct.title || !newProduct.price || !newProduct.category || newProduct.images[0] === '') {
       alert('Preencha os campos obrigatórios!');
       return;
     }
@@ -81,7 +88,7 @@ export default function AdminPage() {
       }
 
       setShowAddForm(false);
-      setNewProduct({ id: '', title: '', description: '', price: 0, category: 'CAMISAS', images: [''], sizes: [], colors: [] });
+      setNewProduct({ id: '', title: '', description: '', price: 0, category: categories[0]?.name || '', images: [''], sizes: [], colors: [] });
       alert('Produto salvo com sucesso!');
     } catch (error) {
       console.error(error);
@@ -98,9 +105,50 @@ export default function AdminPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSaveCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      alert('Informe o nome da categoria.');
+      return;
+    }
+
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, name);
+      } else {
+        await addCategory(name);
+      }
+
+      setNewCategoryName('');
+      setEditingCategory(null);
+    } catch (error: any) {
+      console.error(error);
+      alert(error?.message || 'Erro ao salvar categoria.');
+    }
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setEditingCategory(category);
+    setNewCategoryName(category.name);
+  };
+
+  const handleDeleteCategory = async (category: Category) => {
+    if (!confirm(`Excluir categoria "${category.name}"?`)) return;
+
+    try {
+      await deleteCategory(category.id);
+      if (newProduct.category === category.name) {
+        setNewProduct(prev => ({ ...prev, category: categories[0]?.name || '' }));
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(error?.message || 'Erro ao excluir categoria.');
+    }
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user === 'admin' && pass === 'gold123') setIsLoggedIn(true);
+    if (user === 'admin' && pass === 'ecommerce123') setIsLoggedIn(true);
     else alert('Credenciais Inválidas!');
   };
 
@@ -141,12 +189,13 @@ export default function AdminPage() {
       <aside className="w-full md:w-64 bg-brand-dark border-r border-white/5 p-6 space-y-2">
         <div className="flex items-center gap-3 mb-10 px-2">
           <div className="w-8 h-8 rounded-full border border-brand-gold flex items-center justify-center text-brand-gold font-bold text-xs">BG</div>
-          <span className="font-heading font-bold text-sm tracking-widest uppercase text-white tracking-[0.2em]">Admin Gold</span>
+          <span className="font-heading font-bold text-sm tracking-widest uppercase text-white tracking-[0.2em]">Admin Ecommerce</span>
         </div>
         <nav className="space-y-1">
           <button onClick={() => { setActiveTab('orders'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'orders' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-receipt"></i> <span className="text-xs font-bold uppercase tracking-widest">Pedidos</span></button>
           <button onClick={() => { setActiveTab('clients'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'clients' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-users"></i> <span className="text-xs font-bold uppercase tracking-widest">Clientes</span></button>
           <button onClick={() => { setActiveTab('coupons'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'coupons' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-ticket"></i> <span className="text-xs font-bold uppercase tracking-widest">Cupons</span></button>
+          <button onClick={() => { setActiveTab('categories'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'categories' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-tags"></i> <span className="text-xs font-bold uppercase tracking-widest">Categorias</span></button>
           <button onClick={() => { setActiveTab('products'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'products' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-box"></i> <span className="text-xs font-bold uppercase tracking-widest">Produtos</span></button>
           <button onClick={() => { setActiveTab('config'); setSelectedClient(null); }} className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 ${activeTab === 'config' ? 'bg-brand-gold text-black' : 'text-gray-400 hover:bg-white/5'}`}><i className="fa-solid fa-gears"></i> <span className="text-xs font-bold uppercase tracking-widest">Configurações</span></button>
         </nav>
@@ -207,6 +256,46 @@ export default function AdminPage() {
                 <div key={c.code} className="bg-brand-dark p-6 rounded-2xl border border-brand-gold/20 flex justify-between items-center">
                   <div><p className="text-brand-gold font-black text-lg">{c.code}</p><p className="text-[10px] text-gray-500 font-bold uppercase">{c.discount}% DE DESCONTO</p></div>
                   <button onClick={() => removeCoupon(c.code)} className="text-red-500 hover:text-red-400 p-2"><i className="fa-solid fa-trash"></i></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* CATEGORIAS */}
+        {activeTab === 'categories' && (
+          <div className="space-y-8">
+            <h2 className="font-heading font-black text-3xl uppercase text-white">Categorias</h2>
+            <div className="bg-brand-dark p-8 rounded-3xl border border-white/5 max-w-xl space-y-4">
+              <h3 className="text-brand-gold font-black text-[10px] uppercase tracking-widest">
+                {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+              </h3>
+              <div className="flex gap-3">
+                <input
+                  placeholder="NOME DA CATEGORIA"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  className="flex-1 bg-brand-black p-4 rounded-xl text-white outline-none border border-white/5 focus:border-brand-gold uppercase font-bold text-xs"
+                />
+                <button onClick={handleSaveCategory} className="bg-brand-gold text-black font-black px-6 py-3 rounded-xl uppercase text-[10px] tracking-widest">
+                  {editingCategory ? 'Atualizar' : 'Salvar'}
+                </button>
+                {editingCategory && (
+                  <button onClick={() => { setEditingCategory(null); setNewCategoryName(''); }} className="bg-white/5 text-white font-black px-6 py-3 rounded-xl uppercase text-[10px] tracking-widest">
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map(c => (
+                <div key={c.id} className="bg-brand-dark p-6 rounded-2xl border border-brand-gold/20 flex justify-between items-center gap-4">
+                  <p className="text-brand-gold font-black text-sm uppercase">{c.name}</p>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => handleEditCategory(c)} className="bg-white/5 text-white px-3 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-brand-gold hover:text-black">Editar</button>
+                    <button onClick={() => handleDeleteCategory(c)} className="bg-red-600 text-white px-3 py-2 rounded-lg text-[9px] font-black uppercase hover:bg-red-500">Excluir</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -347,10 +436,11 @@ export default function AdminPage() {
                       />
                       <select 
                         value={newProduct.category} 
-                        onChange={e => setNewProduct({...newProduct, category: e.target.value as Category})} 
+                        onChange={e => setNewProduct({...newProduct, category: e.target.value})} 
                         className="w-full bg-brand-black p-4 rounded-xl text-white outline-none border border-white/5 focus:border-brand-gold uppercase font-black text-[10px]"
                       >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        {categories.length === 0 && <option value="">Cadastre uma categoria antes</option>}
+                        {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                       </select>
                     </div>
                   </div>
@@ -456,3 +546,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
+
+
