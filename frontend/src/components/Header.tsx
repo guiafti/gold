@@ -33,7 +33,7 @@ export default function Header() {
               ) : (
                 <>
                   <div className="logo-fallback flex items-center justify-center w-10 h-10 rounded-full border-2 border-brand-gold text-brand-gold font-bold bg-brand-dark">BG</div>
-                  <span className="font-heading font-bold text-lg md:text-xl tracking-widest uppercase text-white">Black Gold</span>
+                  <span className="font-heading font-bold text-lg md:text-xl tracking-widest uppercase text-white">Ecommerce</span>
                 </>
               )}
             </Link>
@@ -81,3 +81,4 @@ export default function Header() {
     </>
   );
 }
+

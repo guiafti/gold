@@ -11,7 +11,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
           
           <div>
-            <span className="font-heading font-black text-2xl tracking-widest uppercase block mb-4 text-gradient-gold">Black Gold</span>
+            <span className="font-heading font-black text-2xl tracking-widest uppercase block mb-4 text-gradient-gold">Ecommerce</span>
             <p className="text-gray-400 text-xs md:text-sm leading-relaxed mb-6 font-medium uppercase tracking-wider">
               Referência em Grife e Tendências.<br />A loja 01 de Almenara - MG.
             </p>
@@ -47,10 +47,11 @@ export default function Footer() {
         </div>
         <div className="pt-8 border-t border-white/5 text-center">
           <p className="text-gray-600 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">
-            &copy; {new Date().getFullYear()} Black Gold Almenara. Todos os direitos reservados.
+            &copy; {new Date().getFullYear()} Ecommerce Almenara. Todos os direitos reservados.
           </p>
         </div>
       </div>
     </footer>
   );
 }
+

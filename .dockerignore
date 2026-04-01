@@ -1,0 +1,8 @@
+.git
+.gitignore
+.vscode
+frontend/.next
+frontend/node_modules
+.env
+.env.local
+.env.*.local

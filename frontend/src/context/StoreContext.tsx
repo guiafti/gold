@@ -2,14 +2,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getProductsActionV3, addProductActionV3, updateProductAction, deleteProductAction, 
+  getCategoriesAction, addCategoryAction, updateCategoryAction, deleteCategoryAction,
   getConfigAction, updateConfigAction,
   registerUserAction, loginUserAction, getUsersAction,
   createOrderAction, getOrdersAction, updateOrderStatusAction, confirmPaymentAction
 } from '@/app/server-actions';
 
-export type Category = 'CAMISAS' | 'RELOGIOS' | 'TENIS' | 'CALCAS' | 'BERMUDAS';
-
-export interface Product { id: string; title: string; description: string; price: number; category: Category; images: string[]; sizes: string[]; colors: string[]; badge?: string; }
+export interface Category { id: string; name: string; }
+export interface Product { id: string; title: string; description: string; price: number; category: string; images: string[]; sizes: string[]; colors: string[]; badge?: string; }
 export interface CartItem { id: string; selectedSize: string; selectedColor: string; quantity: number; }
 export interface User { id: string; name: string; email: string; phone: string; address: string; password?: string; createdAt: string; }
 export interface Order { id: string; userId: string; items: any[]; subtotal: number; shipping: number; total: number; date: string; status: 'Pendente' | 'Pago' | 'Entregue' | 'Cancelado'; pickup: boolean; paymentDetails?: { time: string; amount: number; method: string; }; couponApplied?: string; }
@@ -22,11 +22,14 @@ export interface Coupon {
 interface StoreConfig { whatsapp: string; instagram: string; pixKey: string; pixReceiverName: string; pixCity: string; shippingFee: number; logo?: string; }
 
 interface StoreContextType {
-  products: Product[]; cart: CartItem[]; config: StoreConfig; users: User[]; currentUser: User | null; orders: Order[]; coupons: Coupon[];
+  products: Product[]; categories: Category[]; cart: CartItem[]; config: StoreConfig; users: User[]; currentUser: User | null; orders: Order[]; coupons: Coupon[];
   updateConfig: (newConfig: StoreConfig) => Promise<void>;
   addProduct: (product: Product) => Promise<void>;
   updateProduct: (product: Product) => Promise<void>;
   deleteProduct: (productId: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  updateCategory: (id: string, name: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
   registerUser: (user: User) => Promise<void>;
   loginUser: (email: string, pass: string) => Promise<boolean>;
   logoutUser: () => void;
@@ -51,25 +54,28 @@ export const formatWhatsApp = (num: string) => {
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [config, setConfig] = useState<StoreConfig>({ whatsapp: '5533999999999', instagram: 'blackgold_almenara', pixKey: '', pixReceiverName: 'BLACK GOLD', pixCity: 'ALMENARA', shippingFee: 15.00, logo: '' });
+  const [config, setConfig] = useState<StoreConfig>({ whatsapp: '5533999999999', instagram: 'ecommerce_almenara', pixKey: '', pixReceiverName: 'ECOMMERCE', pixCity: 'ALMENARA', shippingFee: 15.00, logo: '' });
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [coupons, setCoupons] = useState<Coupon[]>([{ code: 'GOLD10', discount: 10 }]);
+  const [coupons, setCoupons] = useState<Coupon[]>([{ code: 'ECOMMERCE10', discount: 10 }]);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [dbProducts, dbConfig, dbUsers, dbOrders] = await Promise.all([
+        const [dbProducts, dbCategories, dbConfig, dbUsers, dbOrders] = await Promise.all([
           getProductsActionV3(),
+          getCategoriesAction(),
           getConfigAction(),
           getUsersAction(),
           getOrdersAction()
         ]);
         
         setProducts(dbProducts as any);
+        setCategories(dbCategories as any);
         if (dbConfig) setConfig(dbConfig as any);
         setUsers(dbUsers as any);
         setOrders(dbOrders as any);
@@ -114,6 +120,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteProduct = async (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
     await deleteProductAction(id);
+  };
+
+  const addCategory = async (name: string) => {
+    const saved = await addCategoryAction(name);
+    setCategories(prev => {
+      const exists = prev.some(c => c.id === (saved as any).id);
+      if (exists) return prev.map(c => c.id === (saved as any).id ? (saved as any) : c);
+      return [...prev, saved as any].sort((a, b) => a.name.localeCompare(b.name));
+    });
+  };
+
+  const updateCategory = async (id: string, name: string) => {
+    const previousName = categories.find(c => c.id === id)?.name;
+    const saved = await updateCategoryAction(id, name);
+
+    setCategories(prev =>
+      prev
+        .map(c => c.id === id ? (saved as any) : c)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+
+    if (previousName && previousName !== (saved as any).name) {
+      setProducts(prev =>
+        prev.map(p =>
+          p.category === previousName ? { ...p, category: (saved as any).name } : p
+        )
+      );
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    await deleteCategoryAction(id);
+    setCategories(prev => prev.filter(c => c.id !== id));
   };
 
   const registerUser = async (user: User) => {
@@ -182,7 +221,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   return (
     <StoreContext.Provider value={{ 
       products, cart, config, users, currentUser, orders, coupons,
-      updateConfig, addProduct, updateProduct, deleteProduct, registerUser, loginUser, logoutUser, createOrder, updateOrderStatus, confirmPayment, addToCart, removeFromCart, clearCart, addCoupon, removeCoupon 
+      categories,
+      updateConfig, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, registerUser, loginUser, logoutUser, createOrder, updateOrderStatus, confirmPayment, addToCart, removeFromCart, clearCart, addCoupon, removeCoupon 
     }}>
       {children}
     </StoreContext.Provider>
@@ -194,3 +234,4 @@ export const useStore = () => {
   if (!context) throw new Error('useStore must be used within StoreProvider');
   return context;
 };
+
