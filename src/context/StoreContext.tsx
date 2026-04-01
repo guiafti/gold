@@ -1,7 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
-  getProductsAction, addProductAction, updateProductAction, deleteProductAction, 
+  getProductsActionV2, addProductActionV2, updateProductAction, deleteProductAction, 
   getConfigAction, updateConfigAction,
   registerUserAction, loginUserAction, getUsersAction,
   createOrderAction, getOrdersAction, updateOrderStatusAction, confirmPaymentAction
@@ -63,7 +63,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     async function loadData() {
       try {
         const [dbProducts, dbConfig, dbUsers, dbOrders] = await Promise.all([
-          getProductsAction(),
+          getProductsActionV2(),
           getConfigAction(),
           getUsersAction(),
           getOrdersAction()
@@ -102,7 +102,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
   
   const addProduct = async (product: Product) => {
-    const saved = await addProductAction(product);
+    const saved = await addProductActionV2(product);
     setProducts(prev => [saved as any, ...prev]);
   };
 

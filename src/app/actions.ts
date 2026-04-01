@@ -4,15 +4,15 @@ import { revalidatePath } from "next/cache";
 import { put } from "@vercel/blob";
 
 // UPLOAD DE IMAGENS
-export async function uploadImageAction(formData: FormData) {
-  console.log("Forçando novo hash para a Vercel - Atualização de Cache");
+export async function uploadImageActionV2(formData: FormData) {
+  console.log("Executando: uploadImageActionV2");
   try {
     const file = formData.get('file') as File;
     if (!file) throw new Error("Arquivo não encontrado");
 
     const blob = await put(file.name, file, {
       access: 'public', 
-      addRandomSuffix: true, // Adiciona um código aleatório no nome da foto para evitar erro de duplicidade
+      addRandomSuffix: true, 
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
@@ -24,7 +24,7 @@ export async function uploadImageAction(formData: FormData) {
 }
 
 // PRODUTOS
-export async function getProductsAction() {
+export async function getProductsActionV2() {
   try {
     return await prisma.product.findMany({
       orderBy: { createdAt: 'desc' }
@@ -35,8 +35,8 @@ export async function getProductsAction() {
   }
 }
 
-export async function addProductAction(data: any) {
-  console.log("Limpando cache da Server Action: addProductAction");
+export async function addProductActionV2(data: any) {
+  console.log("Executando: addProductActionV2");
   try {
     const { id, ...rest } = data;
     const product = await prisma.product.create({
