@@ -36,6 +36,7 @@ export async function getProductsAction() {
 }
 
 export async function addProductAction(data: any) {
+  console.log("Limpando cache da Server Action: addProductAction");
   try {
     const { id, ...rest } = data;
     const product = await prisma.product.create({
